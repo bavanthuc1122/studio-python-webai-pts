@@ -6,6 +6,39 @@
     <title>Admin Studio</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #4CAF50;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 3000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s;
+            animation: fadein 0.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
         /* Chat message styles */
         .message-bubble {
             max-width: 80%;
@@ -113,6 +146,9 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="custom-toast" class="toast"></div>
+    
     <div class="admin-container" id="dashboard" style="display:none;">
         
         <div class="sidebar">
@@ -225,7 +261,7 @@
             console.log("Login attempt:", {username: u, password: p});
             
             if (!u || !p) {
-                alert('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!');
+                showToast('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!', true);
                 return;
             }
             
@@ -243,7 +279,7 @@
                 document.getElementById('dashboard').style.display = 'grid';
                 loadData();
             } else {
-                alert('Sai tài khoản hoặc mật khẩu!');
+                showToast('Sai tài khoản hoặc mật khẩu!', true);
             }
         }
 
@@ -261,7 +297,7 @@
                 renderUI();
             } catch (error) {
                 console.error("Error loading data:", error);
-                alert("Không thể tải dữ liệu. Vui lòng thử lại.");
+                showToast("Không thể tải dữ liệu. Vui lòng thử lại.", true);
             }
         }
 
@@ -369,8 +405,19 @@
         }
         function formatToVNTime(dateString) {
             if (!dateString) return '';
-            return new Date(dateString).toLocaleString('vi-VN', {
-                timeZone: 'Asia/Ho_Chi_Minh'
+            
+            // Parse the date string and ensure it's in Ho Chi Minh timezone
+            const date = new Date(dateString);
+            
+            // Format to Vietnamese time in Ho Chi Minh timezone
+            return date.toLocaleString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
             });
         }
 
@@ -423,15 +470,15 @@
                 });
                 
                 if (res.ok) {
-                    alert("Đã cập nhật!");
+                    showToast("Đã cập nhật!");
                     loadData(); // Reload data to reflect changes
                 } else {
                     const errorData = await res.json();
-                    alert("Lỗi cập nhật: " + (errorData.message || "Không thể cập nhật thông tin"));
+                    showToast("Lỗi cập nhật: " + (errorData.message || "Không thể cập nhật thông tin"), true);
                 }
             } catch (error) {
                 console.error("Error saving changes:", error);
-                alert("Lỗi kết nối. Vui lòng thử lại.");
+                showToast("Lỗi kết nối. Vui lòng thử lại.", true);
             }
         }
 
@@ -447,41 +494,74 @@
                     });
                     const data = await res.json();
                     if (data.success) {
-                        alert("Đã xóa xong!");
+                        showToast("Đã xóa xong!");
                         closeDetail(); // Quay về danh sách
                         loadData();
                     } else {
-                        alert("Lỗi: " + (data.message || "Không thể xóa"));
+                        showToast("Lỗi: " + (data.message || "Không thể xóa"), true);
                     }
                 } catch (error) {
                     console.error("Error deleting ticket:", error);
-                    alert("Lỗi kết nối. Vui lòng thử lại.");
+                    showToast("Lỗi kết nối. Vui lòng thử lại.", true);
                 }
             }
         }
 
         function copyLink() {
-            const link = document.getElementById('d_link_href').href;
-            if (link && link !== '#') {
-                navigator.clipboard.writeText(link).then(() => {
-                    alert('Đã sao chép link!');
-                }).catch(err => {
-                    console.error('Could not copy text: ', err);
-                    // Fallback
-                    const textArea = document.createElement("textarea");
-                    textArea.value = link;
-                    document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        alert('Đã sao chép link!');
-                    } catch (err) {
-                        alert('Không thể sao chép. Vui lòng thử lại.');
-                    }
-                    document.body.removeChild(textArea);
-                });
+            const linkElement = document.getElementById('d_link_href');
+            if (!linkElement) {
+                showToast('Không tìm thấy phần tử link!', true);
+                return;
             }
+            
+            const link = linkElement.href;
+            console.log('Attempting to copy link:', link); // Debug log
+            
+            if (link && link !== '#' && link.trim() !== '') {
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(link).then(() => {
+                        showToast('Đã sao chép link!');
+                    }).catch(err => {
+                        console.error('Failed to copy with Clipboard API: ', err);
+                        // Fallback to older method
+                        fallbackCopyTextToClipboard(link);
+                    });
+                } else {
+                    // Fallback for older browsers or non-secure contexts
+                    fallbackCopyTextToClipboard(link);
+                }
+            } else {
+                showToast('Không có link để sao chép!', true);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('Đã sao chép link!');
+                } else {
+                    showToast('Không thể sao chép. Vui lòng thử lại.', true);
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                showToast('Không thể sao chép. Vui lòng thử lại.', true);
+            }
+            
+            document.body.removeChild(textArea);
         }
 
         function openLabelMgr() {
@@ -501,7 +581,7 @@
         async function manageLabelAPI(action, lblName = null) {
             const name = lblName || document.getElementById('new_label_input').value;
             if(!name) {
-                alert('Vui lòng nhập tên Label!');
+                showToast('Vui lòng nhập tên Label!', true);
                 return;
             }
             
@@ -518,11 +598,11 @@
                     renderUI();
                     if(action === 'add') document.getElementById('new_label_input').value = '';
                 } else { 
-                    alert(d.message || 'Không thể thực hiện thao tác'); 
+                    showToast(d.message || 'Không thể thực hiện thao tác', true); 
                 }
             } catch (error) {
                 console.error("Error managing label:", error);
-                alert("Lỗi kết nối. Vui lòng thử lại.");
+                showToast("Lỗi kết nối. Vui lòng thử lại.", true);
             }
         }
 
@@ -539,7 +619,7 @@
             if(txt) payload.text_color = txt;
             
             if (Object.keys(payload).length === 0) {
-                alert('Vui lòng thay đổi ít nhất một tùy chọn!');
+                showToast('Vui lòng thay đổi ít nhất một tùy chọn!', true);
                 return;
             }
             
@@ -551,14 +631,14 @@
                 });
                 const data = await res.json();
                 if(data.success) {
-                    alert("Đã cập nhật giao diện Client!");
+                    showToast("Đã cập nhật giao diện Client!");
                     closeModal('configModal');
                 } else { 
-                    alert("Lỗi: " + (data.message || "Không thể cập nhật")); 
+                    showToast("Lỗi: " + (data.message || "Không thể cập nhật"), true); 
                 }
             } catch (error) {
                 console.error("Error saving config:", error);
-                alert("Lỗi kết nối. Vui lòng thử lại.");
+                showToast("Lỗi kết nối. Vui lòng thử lại.", true);
             }
         }
 
@@ -588,6 +668,27 @@
                 document.getElementById('dashboard').style.display = 'grid';
                 loadData();
             }
+        }
+        
+        // Show toast notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("custom-toast");
+            toast.innerText = message;
+            
+            // Set background color based on message type
+            if (isError) {
+                toast.style.backgroundColor = "#f44336"; // Red for errors
+            } else {
+                toast.style.backgroundColor = "#4CAF50"; // Green for success/info
+            }
+            
+            // Show toast
+            toast.className = "toast show";
+            
+            // Hide toast after 3 seconds
+            setTimeout(function(){ 
+                toast.className = toast.className.replace("show", ""); 
+            }, 2000);
         }
         
         // Close modals when clicking outside
