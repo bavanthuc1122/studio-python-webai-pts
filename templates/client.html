@@ -94,7 +94,6 @@
     <div id="toast">Thông báo</div>
 
     <script>
-        // ... (Giữ nguyên toàn bộ script cũ)
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -157,6 +156,13 @@
             const link = document.getElementById('search_link').value;
             const name = document.getElementById('r_name').value;
             const note = document.getElementById('r_note').value;
+            
+            // Kiểm tra link ảnh
+            if (!link) {
+                showToast("Vui lòng nhập Link ảnh!");
+                return;
+            }
+            
             const res = await fetch('/api/update_client', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -164,7 +170,14 @@
             });
             const data = await res.json();
             showToast(data.message);
+            
+            // Nếu cập nhật thành công, refresh lại thông tin
+            if (data.success) {
+                // Gọi lại hàm checkInfo để cập nhật giao diện
+                await checkInfo();
+            }
         }
+
     </script>
 </body>
 </html>
