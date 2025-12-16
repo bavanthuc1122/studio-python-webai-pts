@@ -347,7 +347,7 @@
                 msgDiv.innerHTML = `
                     <div>Link ảnh: <a href="${item.image_link}" target="_blank">${item.image_link}</a></div>
                     <div style="margin-top: 8px;">${item.note || ''}</div>
-                    <div class="message-time">${item.created_at || ''}</div>
+                    <div class="message-time">${formatToVNTime(item.created_at) }</div>
                 `;
                 chatContainer.appendChild(msgDiv);
             }
@@ -367,6 +367,13 @@
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
+        function formatToVNTime(dateString) {
+            if (!dateString) return '';
+            return new Date(dateString).toLocaleString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh'
+            });
+        }
+
 
         function closeDetail() {
             // LOGIC MOBILE: Quay về danh sách
