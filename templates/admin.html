@@ -19,7 +19,7 @@
     <div class="admin-container" id="dashboard" style="display:none;">
         
         <div class="sidebar">
-            <div class="sidebar-header">Danh Sách KH</div>
+            <div class="sidebar-header">Danh Sách KH (<span id="total-count">0</span>)</div>
             
             <div class="search-filter-row">
                 <input type="text" id="search_box" placeholder="Tìm kiếm..." onkeyup="filterList()">
@@ -152,6 +152,10 @@
             const opts = allLabels.map(l => `<option value="${l}">${l}</option>`).join('');
             document.getElementById('filter_label').innerHTML = '<option value="ALL">Tất cả</option>' + opts;
             document.getElementById('d_label').innerHTML = opts;
+            
+            // Cập nhật tổng số khách hàng
+            document.getElementById('total-count').textContent = allData.length;
+            
             filterList();
         }
 
@@ -166,6 +170,9 @@
                 const matchLbl = filter === 'ALL' || i.label === filter;
                 return matchTxt && matchLbl;
             });
+
+            // Cập nhật số lượng khách hàng theo bộ lọc
+            document.getElementById('total-count').textContent = filtered.length;
 
             filtered.forEach(item => {
                 const active = currentRecord && currentRecord.image_link === item.image_link ? 'active' : '';
@@ -205,6 +212,7 @@
                 document.querySelector('.sidebar').classList.add('hidden-on-mobile');
             }
 
+            // Cập nhật lại danh sách với bộ lọc hiện tại
             filterList(); 
         }
 
