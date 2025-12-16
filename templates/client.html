@@ -23,6 +23,39 @@
         .glass-container label {
             text-shadow: none !important; 
         }
+        
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #4CAF50; /* Green background */
+            color: #fff; /* White text color */
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 3000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s;
+            animation: fadein 0.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
     </style>
 </head>
 <body class="client-page">
@@ -91,7 +124,7 @@
         </div>
     </div>
 
-    <div id="toast">Thông báo</div>
+    <div id="toast" class="toast">Thông báo</div>
 
     <script>
         function switchTab(tab) {
@@ -102,7 +135,7 @@
         }
         function showToast(msg) {
             const t = document.getElementById("toast");
-            t.className = "show";
+            t.className = "toast show";
             t.innerText = msg;
             setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
         }
