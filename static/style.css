@@ -126,7 +126,10 @@ body.client-page {
     }
     
     /* Khi mở chi tiết -> Hiện Main Content */
-    .main-content.open { display: flex; }
+    .main-content.open { 
+        display: flex;
+        flex-direction: column;
+    }
 
     /* Nút Back hiện lên */
     .back-btn {
@@ -135,6 +138,33 @@ body.client-page {
         background: #f0f0f0; border-radius: 20px;
         font-size: 14px; font-weight: 600; color: #333;
         border: none; cursor: pointer;
+    }
+    
+    /* Ensure chat area takes available space but allows footer to be visible */
+    .chat-area {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        flex: 1;
+    }
+    
+    /* Chat header stays at top */
+    .chat-header {
+        flex-shrink: 0;
+    }
+    
+    /* Chat container expands but scrolls */
+    #chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        height: auto;
+    }
+    
+    /* Chat footer stays at bottom */
+    .chat-footer {
+        flex-shrink: 0;
+        position: relative !important;
+        bottom: auto !important;
     }
     
     .detail-card { padding: 15px; border-radius: 0; height: 100%; overflow-y: auto; box-shadow: none; }
