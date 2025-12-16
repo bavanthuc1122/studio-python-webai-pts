@@ -152,6 +152,29 @@ def check_info():
         return jsonify({'success': True, 'data': display_record})
     return jsonify({'success': False, 'message': 'Không tìm thấy thông tin.'}), 404
 
+# Endpoint mới cho khách hàng cập nhật thông tin
+@app.route('/api/update_client', methods=['POST'])
+def update_client_info():
+    data = request.json or {}
+    image_link = data.get('image_link', '')
+    if not image_link:
+        return jsonify({'success': False, 'message': 'Vui lòng cung cấp Link ảnh!'}), 400
+        
+    query = {"image_link": image_link}
+    
+    # Chỉ cho phép cập nhật tên khách hàng và ghi chú
+    update_data = {}
+    if 'customer_name' in data: 
+        update_data['customer_name'] = data['customer_name']
+    if 'note' in data: 
+        update_data['note'] = data['note']
+    
+    result = messages_collection.update_one(query, {"$set": update_data})
+    
+    if result.matched_count > 0:
+        return jsonify({'success': True, 'message': 'Đã cập nhật thông tin!'})
+    return jsonify({'success': False, 'message': 'Không tìm thấy bản ghi để cập nhật!'}), 404
+
 # --- API ADMIN ---
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -239,6 +262,6 @@ def delete_ticket():
     return jsonify({'success': False, 'message': 'Không tìm thấy dữ liệu để xóa'}), 404
 
 if __name__ == '__main__':
-    # Sử dụng cổng mà Railway cung cấp hoặc mặc định là 5000
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Sử dụng cổng mà Railway cung cấp, hoặc 8080, hoặc 5000
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=True)
