@@ -239,4 +239,6 @@ def delete_ticket():
     return jsonify({'success': False, 'message': 'Không tìm thấy dữ liệu để xóa'}), 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Sử dụng cổng mà Railway cung cấp hoặc mặc định là 5000
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
