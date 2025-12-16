@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Check-in</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body.client-page {
+            /* Nhận link ảnh từ Server */
+            background-image: url('{{ config.bg_image }}') !important;
+        }
+        
+        /* Màu chữ động */
+        .glass-container, 
+        .glass-container h2, 
+        .glass-container label,
+        .glass-container h3 {
+            color: {{ config.text_color }} !important;
+        }
+
+        /* Xử lý label text shadow nếu màu chữ là màu đen (để dễ đọc) */
+        .glass-container label {
+            text-shadow: none !important; 
+        }
+    </style>
+</head>
+<body class="client-page">
+
+    <div class="glass-container">
+        <h2 style="text-align: center; margin-bottom: 30px;"> PHOTOSHOP STUDIO</h2>
+        
+        <div class="tabs">
+            <div class="tab-btn active" onclick="switchTab('submit')">Gửi Thông Tin</div>
+            <div class="tab-btn" onclick="switchTab('check')">Kiểm Tra</div>
+        </div>
+
+        <div id="submit-section" class="card">
+            <div class="form-group">
+                <label>Tên Khách Hàng</label>
+                <input type="text" id="c_name" placeholder="Nguyễn Văn A">
+            </div>
+            <div class="form-group">
+                <label>Ngày chụp</label>
+                <input type="date" id="c_date">
+            </div>
+            <div class="form-group">
+                <label>Link Ảnh (Link Drive/Dropbox) *</label>
+                <input type="url" id="c_link" placeholder="https://..." required>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea id="c_note" rows="3" placeholder="Nhập mã số bức ảnh cần chỉnh sửa..."></textarea>
+            </div>
+            <button class="btn" onclick="submitForm()">Gửi Thông Tin</button>
+        </div>
+
+        <div id="check-section" class="card" style="display: none;">
+            <div class="form-group">
+                <label>Nhập Link Ảnh của bạn để tra cứu</label>
+                <input type="url" id="search_link" placeholder="Paste link ảnh vào đây...">
+            </div>
+            <button class="btn btn-secondary" onclick="checkInfo()">Tra Cứu</button>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.4);">
+            
+            <div id="result-area" style="display: none; margin-top: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                    <img id="r_avatar" src="" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #fff;">
+                    <div>
+                        <h3 id="r_name_display" style="margin: 0; font-size: 18px; color: #fff;">Tên KH</h3>
+                        <span id="r_label_display" style="background: #fff; color: #0068ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;"></span>
+                    </div>
+                </div>
+
+                <div id="final-result-card" style="background: rgba(232, 245, 233, 0.9); border: 1px solid #c8e6c9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none;">
+                    <h4 style="margin-top: 0; color: #2e7d32;"> Ảnh của bạn đã xong!</h4>
+                    <p id="r_msg_content" style="font-size: 14px; color: #333; margin-bottom: 10px;"></p>
+                    <a id="r_link_result" href="#" target="_blank" class="btn" style="text-decoration: none; display: block; text-align: center; background: #2e7d32;"> Xem Ảnh Ngay</a>
+                </div>
+
+                <div class="form-group">
+                    <label>Tên của bạn</label>
+                    <input type="text" id="r_name">
+                </div>
+                <div class="form-group">
+                    <label>Ghi chú</label>
+                    <textarea id="r_note" rows="3"></textarea>
+                </div>
+                <button class="btn" onclick="updateInfo()">Cập Nhật Thay Đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Thông báo</div>
+
+    <script>
+        // ... (Giữ nguyên toàn bộ script cũ)
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('submit-section').style.display = tab === 'submit' ? 'block' : 'none';
+            document.getElementById('check-section').style.display = tab === 'check' ? 'block' : 'none';
+        }
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.className = "show";
+            t.innerText = msg;
+            setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+        }
+        async function submitForm() {
+            const name = document.getElementById('c_name').value;
+            const date = document.getElementById('c_date').value;
+            const link = document.getElementById('c_link').value;
+            const note = document.getElementById('c_note').value;
+            if(!link) return showToast("Vui lòng nhập Link ảnh!");
+            const res = await fetch('/api/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({customer_name: name, shoot_date: date, image_link: link, note: note})
+            });
+            const data = await res.json();
+            showToast(data.message);
+            if(data.success) {
+                document.getElementById('c_name').value = '';
+                document.getElementById('c_link').value = '';
+                document.getElementById('c_note').value = '';
+            }
+        }
+        async function checkInfo() {
+            const link = document.getElementById('search_link').value;
+            if(!link) return showToast("Nhập link để tìm!");
+            const res = await fetch('/api/check', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({image_link: link})
+            });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('result-area').style.display = 'block';
+                document.getElementById('r_name').value = data.data.customer_name;
+                document.getElementById('r_name_display').innerText = data.data.customer_name;
+                document.getElementById('r_note').value = data.data.note;
+                document.getElementById('r_label_display').innerText = data.data.label;
+                document.getElementById('r_avatar').src = data.data.avatar;
+                if (data.data.label === "Hoàn thành" && data.data.result_link) {
+                    document.getElementById('final-result-card').style.display = 'block';
+                    document.getElementById('r_msg_content').innerText = data.data.result_content || "Cảm ơn bạn đã sử dụng dịch vụ.";
+                    document.getElementById('r_link_result').href = data.data.result_link;
+                } else {
+                    document.getElementById('final-result-card').style.display = 'none';
+                }
+            } else {
+                document.getElementById('result-area').style.display = 'none';
+                showToast(data.message);
+            }
+        }
+        async function updateInfo() {
+            const link = document.getElementById('search_link').value;
+            const name = document.getElementById('r_name').value;
+            const note = document.getElementById('r_note').value;
+            const res = await fetch('/api/update_client', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({image_link: link, customer_name: name, note: note})
+            });
+            const data = await res.json();
+            showToast(data.message);
+        }
+    </script>
+</body>
+</html>
